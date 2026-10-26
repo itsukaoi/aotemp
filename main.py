@@ -1,5 +1,14 @@
 import re
 import subprocess
+import time
+import json
+from pathlib import Path
+
+DEFAULT_CONFIG = {
+     "threshold": 80.0,
+    "interval": 5,
+    "alert_sound": "sounds/alert.wav",
+}
 
 def get_cpu_temperature():
     result = subprocess.run(
@@ -21,10 +30,39 @@ def get_cpu_temperature():
 
     return float(match.group(1))
 
+def load_config():
+    config_path=Path(__file__).with_name("config.json")
+
+    with config_path.open("r", encoding="utf-8") as file:
+        config = json.load(file)
+
+    return config
 
 def main():
-    temperature=get_cpu_temperature()
-    print(f"Temperatura actual de la CPU: {temperature:.1f} °C")
+    config = load_config()
+
+    threshold=config["threshold"]
+    interval=config["interval"]
+    alert_sound=config["alert_sound"]
+
+    print("Aotemp running")
+    print(f"Threshold: {threshold:.1f} °C")
+    print(f"Comprobation interval: {interval} seconds")
+    print("Press Ctrl+C to stop.\n")
+   
+    while True:
+        temperature=get_cpu_temperature()
+
+        print(f"CPU temperature: {temperature:.1f} °C")
+        
+        if temperature>=threshold:
+            print("WARNING")
+        else:
+            print("A-OK")
+
+        print()
+        time.sleep(interval)
+
 
 
 if __name__ == "__main__":

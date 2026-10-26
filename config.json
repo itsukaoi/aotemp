@@ -1,0 +1,5 @@
+{
+    "threshold":80.0,
+    "interval": 5,
+    "alert_sound": "sounds/alert.wav"
+}
