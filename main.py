@@ -3,11 +3,12 @@ import subprocess
 import time
 import json
 from pathlib import Path
+import shutil
 
 DEFAULT_CONFIG = {
      "threshold": 80.0,
     "interval": 5,
-    "alert_sound": "sounds/alert.wav",
+    "alert_sound": "sounds/alert.mp3",
 }
 
 def get_cpu_temperature():
@@ -74,9 +75,29 @@ def load_config():
         raise ValueError("interval must be a numeber between 1 and 3600")
                
     if not isinstance(alert_sound, str) or not alert_sound.strip():
-        raise ValueError("alert_sound must be a non-empty directory")
+        raise ValueError("alert_sound must be a non-empty file path")
 
     return config
+
+
+def play_alert(sound_path):
+    player = shutil.which("pw-play")
+    
+    if player is None:
+        raise RuntimeError("pw-play not found")
+    
+    sound_file = Path(__file__).parent / sound_path
+    
+    if not sound_file.is_file():
+        raise FileNotFoundError(
+            f"Sound not found: {sound_file}"
+        )
+        
+    subprocess.Popen(
+        [player, str(sound_file)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
 def main():
     config = load_config()
@@ -85,25 +106,37 @@ def main():
     interval = config["interval"]
     alert_sound = config["alert_sound"]
     
+    alert_active = False
+    
     print("Aotemp running")
     print(f"Threshold: {threshold:.1f} °C")
     print(f"Comprobation interval: {interval} seconds")
     print("Press Ctrl+C to stop.\n")
    
-    while True:
-        temperature=get_cpu_temperature()
+    try:
+        while True:
+            temperature=get_cpu_temperature()
 
-        print(f"CPU temperature: {temperature:.1f} °C")
-        
-        if temperature>=threshold:
-            print("WARNING")
-        else:
-            print("A-OK")
+            print(f"CPU temperature: {temperature:.1f} °C")
+            
+            if temperature>=threshold:
+                print("WARNING")
+                
+                if not alert_active:
+                    try:
+                        play_alert(alert_sound)
+                        alert_active = True
+                    except (RuntimeError, FileNotFoundError, OSError) as error:
+                        print(f"Alarm could not be played: {error}")
+            else:
+                print("A-OK")
+                alert_active = False
 
-        print()
-        time.sleep(interval)
+            print()
+            time.sleep(interval)
 
-
+    except KeyboardInterrupt:
+        print("\nAotemp stopped")
 
 
 if __name__ == "__main__":
