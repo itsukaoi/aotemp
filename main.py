@@ -10,8 +10,8 @@ def main():
     threshold = config["threshold"]
     interval = config["interval"]
     alert_sound = config["alert_sound"]
-    
-    alert_active = False
+    alarm_repeat_interval = config["alarm_repeat_interval"]
+    last_alarm_time = None
     
     print("Aotemp running")
     print(f"Threshold: {threshold:.1f} °C")
@@ -21,21 +21,27 @@ def main():
     try:
         while True:
             temperature=get_cpu_temperature()
-
+            current_time= time.monotonic()
+            
             print(f"CPU temperature: {temperature:.1f} °C")
             
             if temperature>=threshold:
                 print("WARNING")
                 
-                if not alert_active:
+                should_alert = (
+                    last_alarm_time is None
+                    or current_time - last_alarm_time >= alarm_repeat_interval
+                )    
+                
+                if should_alert:
                     try:
                         play_alert(alert_sound)
-                        alert_active = True
-                    except (RuntimeError, FileNotFoundError, OSError) as error:
+                        last_alarm_time = current_time
+                    except(RuntimeError, FileNotFoundError, OSError) as error:
                         print(f"Alarm could not be played: {error}")
             else:
                 print("A-OK")
-                alert_active = False
+                last_alarm_time = None
 
             print()
             time.sleep(interval)
