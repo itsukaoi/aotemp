@@ -1,5 +1,6 @@
 {
     "threshold": 40.0,
     "interval": 2,
-    "alert_sound": "sounds/alert.mp3"
+    "alert_sound": "sounds/alert.mp3",
+    "alarm_repeat_interval": 60
 }
